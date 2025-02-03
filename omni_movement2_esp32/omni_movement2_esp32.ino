@@ -55,8 +55,7 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int baseSpeed = 50;    // Default speed is 50/255 (~20%)
-int motorSpeed = 255;  // Variable to hold the final speed
+int baseSpeed = 80;    // Default speed is 80/204 (~40%)
 
 // Joystick thresholds
 int thresholdLow = -512;
@@ -102,12 +101,12 @@ void FRMotor(float pwm)
   { // reverse
     pwm = pwm * -1;
     ledcWrite(M1_1_CHANNEL, 0);
-    ledcWrite(M1_2_CHANNEL, speed);
+    ledcWrite(M1_2_CHANNEL, pwm);
   }
   else if (pwm >= 0)
   { // forward
     ledcWrite(M1_2_CHANNEL, 0);
-    ledcWrite(M1_1_CHANNEL, speed);
+    ledcWrite(M1_1_CHANNEL, pwm);
   }
   else 
   {
@@ -122,12 +121,12 @@ void FLMotor(float pwm)
   { // reverse
     pwm = pwm * -1;
     ledcWrite(M2_2_CHANNEL, 0);
-    ledcWrite(M2_1_CHANNEL, speed);
+    ledcWrite(M2_1_CHANNEL, pwm);
   }
   else if (pwm >= 0)
   { // forward
     ledcWrite(M2_1_CHANNEL, 0);
-    ledcWrite(M2_2_CHANNEL, speed);
+    ledcWrite(M2_2_CHANNEL, pwm);
   }
   else 
   {
@@ -142,12 +141,12 @@ void BRMotor(float pwm)
   { // reverse
     pwm = pwm * -1;
     ledcWrite(M3_2_CHANNEL, 0);
-    ledcWrite(M3_1_CHANNEL, speed);
+    ledcWrite(M3_1_CHANNEL, pwm);
   }
   else if (pwm >= 0)
   { // forward
     ledcWrite(M3_1_CHANNEL, 0);
-    ledcWrite(M3_2_CHANNEL, speed);
+    ledcWrite(M3_2_CHANNEL, pwm);
   }
   else 
   {
@@ -162,12 +161,12 @@ void BLMotor(float pwm)
   { // reverse
     pwm = pwm * -1;
     ledcWrite(M4_1_CHANNEL, 0);
-    ledcWrite(M4_2_CHANNEL, speed);
+    ledcWrite(M4_2_CHANNEL, pwm);
   }
   else if (pwm >= 0)
   { // forward
     ledcWrite(M4_2_CHANNEL, 0);
-    ledcWrite(M4_1_CHANNEL, speed);
+    ledcWrite(M4_1_CHANNEL, pwm);
   }
   else 
   {
@@ -177,6 +176,27 @@ void BLMotor(float pwm)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
+
+///////////// Calculate Motor Angle from Controller /////////////////////////////////
+
+float calculateAngle(int16_t lx, int16_t ly) 
+{
+  int resultMagnitude = sqrt((lx * lx) + (ly * ly));
+  if (resultMagnitude > 480)
+  {
+    float angle = atan2(ly, lx);
+    angle = (angle * 180 / M_PI) + 90;
+    if (angle < 0) angle += 360;
+    
+    return angle;
+  }
+  else
+  {
+    return -1;
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////// Motor angle multipler functions ///////////////////////////////////////////
 
