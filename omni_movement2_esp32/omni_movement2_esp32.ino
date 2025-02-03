@@ -95,7 +95,7 @@ void stopAllMotors()
 
 // Movement Functions with throttle control 
 
-void FRMotor(float pwm)
+void FRMotor(int pwm)
 {
   if (pwm < 0)
   { // reverse
@@ -115,7 +115,7 @@ void FRMotor(float pwm)
   }
 }
 
-void FLMotor(float pwm)
+void FLMotor(int pwm)
 {
   if (pwm < 0)
   { // reverse
@@ -135,7 +135,7 @@ void FLMotor(float pwm)
   }
 }
 
-void BRMotor(float pwm)
+void BRMotor(int pwm)
 {
   if (pwm < 0)
   { // reverse
@@ -155,7 +155,7 @@ void BRMotor(float pwm)
   }
 }
 
-void BLMotor(float pwm)
+void BLMotor(int pwm)
 {
   if (pwm < 0)
   { // reverse
@@ -242,8 +242,8 @@ void moveCar(int motorSpeed, float angle, int button)
   float diagonal_1_multiplier = diagonalMotors_CW(angle);
   float diagonal_2_multiplier = diagonalMotors_ACW(angle);
 
-  float diagonal_1_motor_pwm = diagonal_1_multiplier * motorSpeed;
-  float diagonal_2_motor_pwm = diagonal_2_multiplier * motorSpeed;
+  int diagonal_1_motor_pwm = diagonal_1_multiplier * motorSpeed;
+  int diagonal_2_motor_pwm = diagonal_2_multiplier * motorSpeed;
   
   // Move Car Omni with throttle control
   FRMotor(diagonal_1_motor_pwm);
@@ -279,7 +279,7 @@ void moveCar(int motorSpeed, float angle, int button)
 ////////////// Setup function ////////////////////////////////////////////////////
 void setup() 
 {
-    //Serial.begin(115200);
+    Serial.begin(115200);
     //Serial.println("Starting Bluepad32...");
 
     // Motor Setup
