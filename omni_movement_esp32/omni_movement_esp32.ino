@@ -53,8 +53,7 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int baseSpeed = 50;    // Default speed is 50/255 (~20%)
-int motorSpeed = 255;  // Variable to hold the final speed
+int baseSpeed = 80;    // Default speed is 80/204 (~40%)
 
 // Joystick thresholds
 int thresholdLow = -512;
@@ -308,8 +307,8 @@ void moveCar(int16_t lx, int16_t ly, int motorSpeed, float angle, int button)
 // Setup function
 void setup() 
 {
-    Serial.begin(115200);
-    Serial.println("Starting Bluepad32...");
+    //Serial.begin(115200);
+    //Serial.println("Starting Bluepad32...");
 
     // Motor Setup
     for (int i = 0; i < PWM_CHANNELS; i++)
@@ -346,10 +345,10 @@ void loop()
         //Serial.println(angle);
         
         // Map the left trigger value (L2) to an additional speed (0 to 205)
-        int additionalSpeed = map(L2, 0, 1023, 0, 205);
+        int additionalSpeed = map(L2, 0, 1023, 0, 124);
 
         // Combine base speed with additional speed
-        motorSpeed = baseSpeed + additionalSpeed;
+        int motorSpeed = baseSpeed + additionalSpeed;
 
         // Move Car with throttle control
         moveCar(lx, ly, motorSpeed, angle, button);
