@@ -200,56 +200,51 @@ float calculateAngle(int16_t lx, int16_t ly)
 
 ///////////// Motor angle multipler functions ///////////////////////////////////////////
 
-float diagonalMotors_CW(float angle) 
+int diagonalMotors_CW(float angle, int motorSpeed) 
 {
     if (angle >= 0 && angle <= 90) 
     {
         // Linear equation from 1 to 0
-        return (1 - (angle / 45));
+        return motorSpeed * (1 - ( (2 * angle) / 90) );
     } 
     else if (angle > 90 && angle <= 180) 
     {
         // Constant signal -1
-        return -1;
+        return -1 * motorSpeed;
     } 
     else if (angle > 180 && angle <= 270) 
     {
         // Linear equation from -1 to 0
-        return ((angle / 45) - 5);
+        return motorSpeed * ( ( (2 * angle) / 90 ) - 5);
     } 
     else if (angle > 270 && angle <= 360) 
     {
         // Constant signal 1
-        return 1;
+        return motorSpeed;
     } 
-    else {
+    else 
+    {
         // Default case
         return 0;
     }
 }
 
-float diagonalMotors_ACW(float angle) 
+int diagonalMotors_ACW(float angle, int motorSpeed) 
 {
-  return diagonalMotors_CW(360 - angle);  // Mirror CW about 360
+  return diagonalMotors_CW(360 - angle, motorSpeed);  // Mirror CW about 360
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
 
 //////////////// Main Movement Function //////////////////////////////////////////////
 
-void moveCar(int motorSpeed, float angle, int button)
-{
-  float diagonal_1_multiplier = diagonalMotors_CW(angle);
-  float diagonal_2_multiplier = diagonalMotors_ACW(angle);
-
-  int diagonal_1_motor_pwm = diagonal_1_multiplier * motorSpeed;
-  int diagonal_2_motor_pwm = diagonal_2_multiplier * motorSpeed;
-  
+void moveCar(float PWM_1, float PWM_2, int button, int motorSpeed)
+{ 
   // Move Car Omni with throttle control
-  FRMotor(diagonal_1_motor_pwm);
-  FLMotor(diagonal_2_motor_pwm);
-  BRMotor(diagonal_2_motor_pwm);
-  BLMotor(diagonal_1_motor_pwm);
+  FRMotor(PWM_1);
+  FLMotor(PWM_2);
+  BRMotor(PWM_2);
+  BLMotor(PWM_1);
 
   // Clockwise Rotation
   if (button & 0x0020)
@@ -321,8 +316,11 @@ void loop()
         // Combine base speed with additional speed
         int motorSpeed = baseSpeed + additionalSpeed;
 
+        int PWM_1 = diagonalMotors_CW(angle, motorSpeed);
+        int PWM_2 = diagonalMotors_ACW(angle, motorSpeed);
+
         // Move the car
-        moveCar(motorSpeed, angle, button);
+        moveCar(PWM_1, PWM_2, button, motorSpeed);
     }
     else
     {
