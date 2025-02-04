@@ -15,14 +15,14 @@
 
 //////////////// Motor pin definitions //////////////////////////////////////////
 
-#define M1_1 4
-#define M1_2 5
-#define M2_1 6
-#define M2_2 7
-#define M3_1 15
-#define M3_2 16
-#define M4_1 17
-#define M4_2 18 
+#define M1_1 7
+#define M1_2 6
+#define M2_1 5
+#define M2_2 4
+#define M3_1 18
+#define M3_2 17
+#define M4_1 16
+#define M4_2 15 
 
 int motorPins[] = {M1_1, M1_2, M2_1, M2_2, M3_1, M3_2, M4_1, M4_2};
 
@@ -307,7 +307,7 @@ void moveCar(int16_t lx, int16_t ly, int motorSpeed, float angle, int button)
 // Setup function
 void setup() 
 {
-    //Serial.begin(115200);
+    Serial.begin(115200);
     //Serial.println("Starting Bluepad32...");
 
     // Motor Setup
@@ -342,7 +342,7 @@ void loop()
 
         float angle = calculateAngle(lx, ly);
 
-        //Serial.println(angle);
+        Serial.println(angle);
         
         // Map the left trigger value (L2) to an additional speed (0 to 205)
         int additionalSpeed = map(L2, 0, 1023, 0, 124);
