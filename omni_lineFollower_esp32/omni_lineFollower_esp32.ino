@@ -59,7 +59,7 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int motorSpeed = 180;
+int motorSpeed = 100 * 2.55;
 
 // Joystick thresholds
 int thresholdLow = -512;
@@ -69,13 +69,12 @@ int sensorRawValues[5];  // Sensor values (analog readings)
 int sensorWeights[5] = {-2, -1, 0, 1, 2};
 
 // PID Controls
-#define Kp 5 //set Kp Value
+#define Kp 18 //set Kp Value
 #define Ki 0 //set Ki Value
 #define Kd 0 //set Kd Value
 
 int proportional = 0;
 int error = 0;
-int controlSignal = 0;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -220,10 +219,17 @@ float calculateAngle(int16_t lx, int16_t ly)
 
 ///////////////// IR P Controller ///////////////////////////////////////
 
-void IR_PController() 
+int IR_PController() 
 {
   proportional = Kp * error; 
-  controlSignal = proportional; 
+  int controlSignal = proportional; 
+
+  if (controlSignal < 0)
+  {
+    controlSignal += 360;
+  }
+
+  return controlSignal;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -308,18 +314,18 @@ void moveCar(float angle, int button)
     // Clockwise Rotation (using button bitmask 0x0020)
     else if (button & 0x0020)
     {
-        FRMotor(reverse, motorSpeed);
-        FLMotor(forward, motorSpeed);
-        BRMotor(reverse, motorSpeed);
-        BLMotor(forward, motorSpeed);
+        FRMotor(reverse, 0);
+        FLMotor(forward, 0);
+        BRMotor(reverse, 0);
+        BLMotor(forward, 0);
     }
     // Anti-Clockwise Rotation (using button bitmask 0x0010)
     else if (button & 0x0010)
     {
-        FRMotor(forward, motorSpeed);
-        FLMotor(reverse, motorSpeed);
-        BRMotor(forward, motorSpeed);
-        BLMotor(reverse, motorSpeed);
+        FRMotor(forward, 0);
+        FLMotor(reverse, 0);
+        BRMotor(forward, 0);
+        BLMotor(reverse, 0);
     }
     // Stop Motors if Joystick is Centered
     else 
@@ -396,7 +402,7 @@ void loop()
         Serial.print(error);
         Serial.print("  ");
 
-        IR_PController();
+        int controlSignal = IR_PController();
 
         Serial.println(controlSignal);
 
