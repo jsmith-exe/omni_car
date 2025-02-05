@@ -59,7 +59,7 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int baseSpeed = 80;    // Default speed is 80/204 (~40%)
+int motorSpeed = 180;
 
 // Joystick thresholds
 int thresholdLow = -512;
@@ -69,14 +69,12 @@ int sensorRawValues[5];  // Sensor values (analog readings)
 int sensorWeights[5] = {-2, -1, 0, 1, 2};
 
 // PID Controls
-#define Kp 20 //set Kp Value
+#define Kp 5 //set Kp Value
 #define Ki 0 //set Ki Value
 #define Kd 0 //set Kd Value
 
 int proportional = 0;
-
 int error = 0;
-
 int controlSignal = 0;
 
 //////////////////////////////////////////////////////////////////////////
@@ -233,7 +231,7 @@ void IR_PController()
 ///////////// Main Movement Algoithm //////////////////////////////////
 
 // Function to control motors based on joystick input
-void moveCar(int16_t lx, int16_t ly, int motorSpeed, float angle, int button)
+void moveCar(float angle, int button)
 {
     // 0 to 45 Degrees
     if (angle >= 0 && angle <= 45)
@@ -402,16 +400,8 @@ void loop()
 
         Serial.println(controlSignal);
 
-        //Serial.println(angle);
-        
-        // Map the left trigger value (L2) to an additional speed (0 to 205)
-        int additionalSpeed = map(L2, 0, 1023, 0, 124);
-
-        // Combine base speed with additional speed
-        int motorSpeed = baseSpeed + additionalSpeed;
-
         // Move Car with throttle control
-        //moveCar(lx, ly, motorSpeed, angle, button);
+        moveCar(controlSignal, button);
     }
     else
     {
