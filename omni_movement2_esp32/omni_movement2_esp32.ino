@@ -17,14 +17,14 @@
 
 //////////////// Motor pin definitions //////////////////////////////////////////
 
-#define M1_1 4
-#define M1_2 5
-#define M2_1 6
-#define M2_2 7
-#define M3_1 15
-#define M3_2 16
-#define M4_1 17
-#define M4_2 18 
+#define M1_1 7
+#define M1_2 6
+#define M2_1 5
+#define M2_2 4
+#define M3_1 18
+#define M3_2 17
+#define M4_1 16
+#define M4_2 15 
 
 int motorPins[] = {M1_1, M1_2, M2_1, M2_2, M3_1, M3_2, M4_1, M4_2};
 
@@ -57,9 +57,9 @@ ControllerPtr myControllers; // Initialize to nullptr
 // Motor Speed
 int baseSpeed = 80;    // Default speed is 80/204 (~40%)
 
-// Joystick thresholds
-int thresholdLow = -512;
-int thresholdHigh = 512;
+// PWM Variables
+int PWM1 = 0;
+int PWM2 = 0;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -198,56 +198,40 @@ float calculateAngle(int16_t lx, int16_t ly)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-///////////// Motor angle multipler functions ///////////////////////////////////////////
+///////////////// Motor Mathematics ////////////////////////////////////////////////////
 
-int diagonalMotors_CW(float angle, int motorSpeed) 
+// Define the motor function
+float motor_pwm(float theta, float maxSpeed, bool diagonal2) 
 {
-    if (angle >= 0 && angle <= 90) 
-    {
-        // Linear equation from 1 to 0
-        return motorSpeed * (1 - ( (2 * angle) / 90) );
-    } 
-    else if (angle > 90 && angle <= 180) 
-    {
-        // Constant signal -1
-        return -1 * motorSpeed;
-    } 
-    else if (angle > 180 && angle <= 270) 
-    {
-        // Linear equation from -1 to 0
-        return motorSpeed * ( ( (2 * angle) / 90 ) - 5);
-    } 
-    else if (angle > 270 && angle <= 360) 
-    {
-        // Constant signal 1
-        return motorSpeed;
-    } 
-    else 
-    {
-        // Default case
-        return 0;
-    }
+  if (diagonal2)
+  {
+    theta = 360 - theta;
+  }
+
+  if (theta >= 0 && theta <= 90) { return maxSpeed * (1 - (theta / 45)); }
+  else if (theta > 90 && theta <= 180) { return -1 * maxSpeed; }
+  else if (theta > 180 && theta <= 270) { return maxSpeed * ((theta / 45) - 5); }
+  else if  (theta > 270 && theta <= 360) { return maxSpeed; }
+  else return 0;
 }
 
-int diagonalMotors_ACW(float angle, int motorSpeed) 
-{
-  return diagonalMotors_CW(360 - angle, motorSpeed);  // Mirror CW about 360
-}
-
-////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////// Main Movement Function //////////////////////////////////////////////
 
-void moveCar(float PWM_1, float PWM_2, int button, int motorSpeed)
+void moveCar(float angle, int button, int motorSpeed)
 { 
   // Move Car Omni with throttle control
-  FRMotor(PWM_1);
-  FLMotor(PWM_2);
-  BRMotor(PWM_2);
-  BLMotor(PWM_1);
+  if (angle >= 0)
+  {
+    FRMotor(PWM1);
+    FLMotor(PWM2);
+    BRMotor(PWM2);
+    BLMotor(PWM1);
+  }
 
   // Clockwise Rotation
-  if (button & 0x0020)
+  else if (button & 0x0020)
   {
     FRMotor(motorSpeed * -1);
     FLMotor(motorSpeed);
@@ -308,19 +292,24 @@ void loop()
 
         float angle = calculateAngle(lx, ly);
 
-        //Serial.println(angle);
+        Serial.print(angle);
         
         // Map the left trigger value (L2) to an additional speed (0 to 205)
         int additionalSpeed = map(L2, 0, 1023, 0, 124);
 
         // Combine base speed with additional speed
-        int motorSpeed = baseSpeed + additionalSpeed;
+        int maxSpeed = baseSpeed + additionalSpeed;
 
-        int PWM_1 = diagonalMotors_CW(angle, motorSpeed);
-        int PWM_2 = diagonalMotors_ACW(angle, motorSpeed);
+        PWM1 = motor_pwm(angle, maxSpeed, 0);
+        PWM2 = motor_pwm(angle, maxSpeed, 1);
+
+        Serial.print("  ");
+        Serial.print(PWM1);
+        Serial.print("  ");
+        Serial.println(PWM2);
 
         // Move the car
-        moveCar(PWM_1, PWM_2, button, motorSpeed);
+        moveCar(angle, button, maxSpeed);
     }
     else
     {
