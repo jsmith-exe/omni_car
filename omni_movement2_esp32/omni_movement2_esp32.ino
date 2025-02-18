@@ -58,8 +58,8 @@ ControllerPtr myControllers; // Initialize to nullptr
 int baseSpeed = 80;    // Default speed is 80/204 (~40%)
 
 // PWM Variables
-int PWM1 = 0;
-int PWM2 = 0;
+float PWM1 = 0;
+float PWM2 = 0;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -95,7 +95,7 @@ void stopAllMotors()
 
 // Movement Functions with throttle control 
 
-void FRMotor(int pwm)
+void FRMotor(float pwm)
 {
   if (pwm < 0)
   { // reverse
@@ -115,7 +115,7 @@ void FRMotor(int pwm)
   }
 }
 
-void FLMotor(int pwm)
+void FLMotor(float pwm)
 {
   if (pwm < 0)
   { // reverse
@@ -135,7 +135,7 @@ void FLMotor(int pwm)
   }
 }
 
-void BRMotor(int pwm)
+void BRMotor(float pwm)
 {
   if (pwm < 0)
   { // reverse
@@ -155,7 +155,7 @@ void BRMotor(int pwm)
   }
 }
 
-void BLMotor(int pwm)
+void BLMotor(float pwm)
 {
   if (pwm < 0)
   { // reverse
@@ -292,8 +292,6 @@ void loop()
 
         float angle = calculateAngle(lx, ly);
 
-        Serial.print(angle);
-        
         // Map the left trigger value (L2) to an additional speed (0 to 205)
         int additionalSpeed = map(L2, 0, 1023, 0, 124);
 
@@ -303,10 +301,14 @@ void loop()
         PWM1 = motor_pwm(angle, maxSpeed, 0);
         PWM2 = motor_pwm(angle, maxSpeed, 1);
 
+        /*
+        //DEBUG
+        Serial.print(angle);
         Serial.print("  ");
         Serial.print(PWM1);
         Serial.print("  ");
-        Serial.println(PWM2);
+        Serial.println(PWM2); */
+        
 
         // Move the car
         moveCar(angle, button, maxSpeed);
