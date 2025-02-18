@@ -1,6 +1,8 @@
 /////////////////////////////////////////////////////////////////////////////////
 ////////////////   ESP32 VERSION   //////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
+/////////////   Encoder Controller   //////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
 /////////////////   JAMIE SMITH   ///////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //////////////   Queen's University Belfast   //////////////////////////////////
@@ -40,10 +42,10 @@ int motorChannels[] = {M1_1_CHANNEL, M1_2_CHANNEL, M2_1_CHANNEL, M2_2_CHANNEL, M
 
 //////////////////////////////////////////////////////////////////////////////
 
-/////////////////// Encoder Pins /////////////////////////////////////////////
+//////////////////// Encoder Pins ///////////////////////////////////////////
 
-#define FR_enc1 21
-#define FR_enc2 20
+#define FR_encA 21
+#define FR_encB 20
 
 /////////////////// Variables ////////////////////////////////////////////////
 
@@ -58,36 +60,22 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int baseSpeed = 120;    // Default speed is 80/204 (~40%)
+int baseSpeed = 0;    // Default speed is 80/204 (~40%)
 
-// Joystick thresholds
-int thresholdLow = -512;
-int thresholdHigh = 512;
+// PWM Variables
+float PWM1 = 0;
+float PWM2 = 0;
 
-////// Encoder Variables ////////
+// Encoder Variables
 
-volatile int FR_enc_counter1 = 0;
-volatile int FR_enc_counter2 = 0;
+volatile long FR_enc_counter = 0;
+volatile int direction = 1;
 
-// PID Controls
-float Kp = 7; //set Kp Value
-float Ki = 0; //set Ki Value
-float Kd = 4; //set Kd Value
-
-float proportional = 0;
-float differential = 0;
-float integral = 0;
-
-float currentTime;
-float previousTime;
-
-int error = 0;
-int prevError = 0;
-
-const int setPoint = 1260;
-const int tolerance = 5;
-
-/////////////////////////////
+unsigned long prevTime = 0;
+float rpm = 0;
+float target_rpm = 100;
+#define Kp 1
+float motorPWM = 0;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -121,162 +109,143 @@ void stopAllMotors()
     ledcWrite(M4_2_CHANNEL, 0);
 }
 
-// Movement Functions with throttle control
+// Movement Functions with throttle control 
 
-void FRMotor(String movement, int speed)
+void FRMotor(float pwm)
 {
-  switch (movement[0])
+  if (pwm < 0)
+  { // reverse
+    pwm = pwm * -1;
+    ledcWrite(M1_1_CHANNEL, 0);
+    ledcWrite(M1_2_CHANNEL, pwm);
+  }
+  else if (pwm >= 0)
+  { // forward
+    ledcWrite(M1_2_CHANNEL, 0);
+    ledcWrite(M1_1_CHANNEL, pwm);
+  }
+  else 
   {
-    case 'f':  
-      ledcWrite(M1_2_CHANNEL, 0);
-      ledcWrite(M1_1_CHANNEL, speed);
-      break;
-
-    case 'r':  
-      ledcWrite(M1_1_CHANNEL, 0);
-      ledcWrite(M1_2_CHANNEL, speed);
-      break;
-
-    default:
-      ledcWrite(M1_1_CHANNEL, 0);
-      ledcWrite(M1_2_CHANNEL, 0);
-      break;
+    ledcWrite(M1_1_CHANNEL, 0);
+    ledcWrite(M1_2_CHANNEL, 0);
   }
 }
 
-void FLMotor(String movement, int speed)
+void FLMotor(float pwm)
 {
-  switch (movement[0])
+  if (pwm < 0)
+  { // reverse
+    pwm = pwm * -1;
+    ledcWrite(M2_2_CHANNEL, 0);
+    ledcWrite(M2_1_CHANNEL, pwm);
+  }
+  else if (pwm >= 0)
+  { // forward
+    ledcWrite(M2_1_CHANNEL, 0);
+    ledcWrite(M2_2_CHANNEL, pwm);
+  }
+  else 
   {
-    case 'f':  
-      ledcWrite(M2_1_CHANNEL, 0);
-      ledcWrite(M2_2_CHANNEL, speed);
-      break;
-
-    case 'r':  
-      ledcWrite(M2_2_CHANNEL, 0);
-      ledcWrite(M2_1_CHANNEL, speed);
-      break;
-
-    default:
-      ledcWrite(M2_1_CHANNEL, 0);
-      ledcWrite(M2_2_CHANNEL, 0);
-      break;
+    ledcWrite(M2_1_CHANNEL, 0);
+    ledcWrite(M2_2_CHANNEL, 0);;
   }
 }
 
-void BRMotor(String movement, int speed)
+void BRMotor(float pwm)
 {
-  switch (movement[0])
+  if (pwm < 0)
+  { // reverse
+    pwm = pwm * -1;
+    ledcWrite(M3_2_CHANNEL, 0);
+    ledcWrite(M3_1_CHANNEL, pwm);
+  }
+  else if (pwm >= 0)
+  { // forward
+    ledcWrite(M3_1_CHANNEL, 0);
+    ledcWrite(M3_2_CHANNEL, pwm);
+  }
+  else 
   {
-    case 'f':  
-      ledcWrite(M3_1_CHANNEL, 0);
-      ledcWrite(M3_2_CHANNEL, speed);
-      break;
-
-    case 'r':  
-      ledcWrite(M3_2_CHANNEL, 0);
-      ledcWrite(M3_1_CHANNEL, speed);
-      break;
-
-    default:
-      ledcWrite(M3_1_CHANNEL, 0);
-      ledcWrite(M3_2_CHANNEL, 0);
-      break;
+    ledcWrite(M3_1_CHANNEL, 0);
+    ledcWrite(M3_2_CHANNEL, 0);
   }
 }
 
-void BLMotor(String movement, int speed)
+void BLMotor(float pwm)
 {
-  switch (movement[0])
+  if (pwm < 0)
+  { // reverse
+    pwm = pwm * -1;
+    ledcWrite(M4_1_CHANNEL, 0);
+    ledcWrite(M4_2_CHANNEL, pwm);
+  }
+  else if (pwm >= 0)
+  { // forward
+    ledcWrite(M4_2_CHANNEL, 0);
+    ledcWrite(M4_1_CHANNEL, pwm);
+  }
+  else 
   {
-    case 'f':  
-      ledcWrite(M4_2_CHANNEL, 0);
-      ledcWrite(M4_1_CHANNEL, speed);
-      break;
-
-    case 'r':  
-      ledcWrite(M4_1_CHANNEL, 0);
-      ledcWrite(M4_2_CHANNEL, speed);
-      break;
-
-    default:
-      ledcWrite(M4_1_CHANNEL, 0);
-      ledcWrite(M4_2_CHANNEL, 0);
-      break;
+    ledcWrite(M4_1_CHANNEL, 0);
+    ledcWrite(M4_2_CHANNEL, 0);
   }
 }
 
-//////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
 
-///////////// Encoder ISRs //////////////////////////////////////////////
+///////////////// Encoder Functions ////////////////////////////////////////////////
 
-void IRAM_ATTR FR_encoder1()
+void IRAM_ATTR FR_encoderISR()
 {
-  FR_enc_counter1++;
+  if (digitalRead(FR_encB) == HIGH)
+  {
+    FR_enc_counter++;
+    direction = 1;
+  }
+  else
+  {
+    FR_enc_counter--;
+    direction = -1;
+  }
 }
 
-void IRAM_ATTR FR_encoder2()
+void FR_encoder()
 {
-  FR_enc_counter2++;
+  unsigned long currentTime = millis();
+
+  if (currentTime - prevTime >= 100)
+  {
+    long pulses = FR_enc_counter;
+    FR_enc_counter = 0;
+
+    float rpm = (pulses / (float)630) * 60 * 10;
+
+    Serial.print("RPM: ");
+    Serial.print(abs(rpm));  // Show absolute RPM
+    Serial.print(" | Direction: ");
+    Serial.println((pulses >= 0) ? "Forward" : "Reverse");
+
+    prevTime = currentTime;  
+  }
 }
 
-//////////////////////////////////////////////////////////////////////////
-
-/////////////// Encoder P Controller /////////////////////////////////////
-
-float enc_PController() 
+float FR_encoder_controller()
 {
-  // Calculate time step
-  float currentTime = millis();
-  float dt = (currentTime - previousTime) / 1000.0; // in seconds
-  if (dt < 0.001) dt = 0.001;  // Prevent division by zero
-  
-  // Get current encoder position (using counter 2)
-  noInterrupts();
-  int currentPosition = FR_enc_counter2;
-  interrupts();
-  
-  // Compute error
-  int error = setPoint - currentPosition;
-  
-  // If we are within tolerance or overshot the target, command zero output.
-  if(error <= tolerance) 
-  {
-    return 0;
-  }
-  
-  // Compute PID terms
-  float Pout = Kp * error;
-  integral += error * dt;
-  float Iout = Ki * integral;
-  float derivative = (error - prevError) / dt;
-  float Dout = Kd * derivative;
-  
-  float output = Pout + Iout + Dout;
-  
-  // Save error and time for the next iteration
-  prevError = error;
-  previousTime = currentTime;
-  
-  // If the computed output is negative (would mean reversing), force it to zero.
-  if (output < 0) 
-  {
-    output = 0;
-  }
-  // Clamp output to the PWM limits.
-  if (output > 255) 
-  {
-    output = 255;
-  }
-  
-  return output;
+  float error = target_rpm - rpm;
+
+  int control_signal = Kp * error;
+
+  motorPWM += control_signal;
+
+  // Limit PWM output to valid range (0-255)
+  motorPWM = constrain(motorPWM, 0, 200);
+
+  return motorPWM;
 }
 
+////////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////
-
-///////////// Calculate Motor Angle from Controller ///////////////////////
+///////////// Calculate Motor Angle from Controller /////////////////////////////////
 
 float calculateAngle(int16_t lx, int16_t ly) 
 {
@@ -295,115 +264,63 @@ float calculateAngle(int16_t lx, int16_t ly)
   }
 }
 
-////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
 
-///////////// Main Movement Algoithm //////////////////////////////////
+///////////////// Motor Mathematics ////////////////////////////////////////////////////
 
-// Function to control motors based on joystick input
-void moveCar(int16_t lx, int16_t ly, int motorSpeed, float angle, int button)
+// Define the motor function
+float motor_pwm(float theta, float maxSpeed, bool diagonal2) 
 {
-    // 0 to 45 Degrees
-    if (angle >= 0 && angle <= 45)
-    {
-        int angularMotorSpeed = map(angle, 0, 45, motorSpeed, 0);
-        FRMotor(forward, angularMotorSpeed);
-        FLMotor(forward, motorSpeed);
-        BRMotor(forward, motorSpeed);
-        BLMotor(forward, angularMotorSpeed);
-    }
-    // 45 to 90 Degrees
-    else if (angle >= 45 && angle <= 90) 
-    {
-        int angularMotorSpeed = map(angle, 45, 90, 0, motorSpeed);
-        FRMotor(reverse, angularMotorSpeed);
-        FLMotor(forward, motorSpeed);
-        BRMotor(forward, motorSpeed);
-        BLMotor(reverse, angularMotorSpeed);
-    }
-    // 90 to 135 Degrees
-    else if (angle >= 90 && angle <= 135) 
-    {
-        int angularMotorSpeed = map(angle, 90, 135, motorSpeed, 0);
-        FRMotor(reverse, motorSpeed);
-        FLMotor(forward, angularMotorSpeed);
-        BRMotor(forward, angularMotorSpeed);
-        BLMotor(reverse, motorSpeed);
-    }
-    // 135 to 180 Degrees
-    else if (angle >= 135 && angle <= 180) 
-    {
-        int angularMotorSpeed = map(angle, 135, 180, 0, motorSpeed);
-        FRMotor(reverse, motorSpeed);
-        FLMotor(reverse, angularMotorSpeed);
-        BRMotor(reverse, angularMotorSpeed);
-        BLMotor(reverse, motorSpeed);
-    }
-    // 180 to 225 Degrees
-    else if (angle >= 180 && angle <= 225)
-    {
-        int angularMotorSpeed = map(angle, 180, 225, motorSpeed, 0);
-        FRMotor(reverse, angularMotorSpeed);
-        FLMotor(reverse, motorSpeed);
-        BRMotor(reverse, motorSpeed);
-        BLMotor(reverse, angularMotorSpeed);
-    }
-    // 225 to 270 Degrees
-    else if (angle >= 225 && angle <= 270)
-    {
-        int angularMotorSpeed = map(angle, 225, 270, 0, motorSpeed);
-        FRMotor(forward, angularMotorSpeed);
-        FLMotor(reverse, motorSpeed);
-        BRMotor(reverse, motorSpeed);
-        BLMotor(forward, angularMotorSpeed);
-    }
-    // 270 to 315 Degrees
-    else if (angle >= 270 && angle <= 315)
-    {
-        int angularMotorSpeed = map(angle, 270, 315, motorSpeed, 0);
-        FRMotor(forward, motorSpeed);
-        FLMotor(reverse, angularMotorSpeed);
-        BRMotor(reverse, angularMotorSpeed);
-        BLMotor(forward, motorSpeed);
-    }
-    // 315 to 360 Degrees
-    else if (angle >= 315 && angle <= 360)
-    {
-        int angularMotorSpeed = map(angle, 315, 360, 0, motorSpeed);
-        FRMotor(forward, motorSpeed);
-        FLMotor(forward, angularMotorSpeed);
-        BRMotor(forward, angularMotorSpeed);
-        BLMotor(forward, motorSpeed);
-    }
-    /*
-    // Clockwise Rotation (using button bitmask 0x0020)
-    else if (button & 0x0020)
-    {
-        FRMotor(reverse, motorSpeed);
-        FLMotor(forward, motorSpeed);
-        BRMotor(reverse, motorSpeed);
-        BLMotor(forward, motorSpeed);
-    }
-    /*
-    // Anti-Clockwise Rotation (using button bitmask 0x0010)
-    else if (button & 0x0010)
-    {
-        FRMotor(forward, motorSpeed);
-        FLMotor(reverse, motorSpeed);
-        BRMotor(forward, motorSpeed);
-        BLMotor(reverse, motorSpeed);
-    } */
-    // Stop Motors if Joystick is Centered
-    else 
-    {
-        stopAllMotors();
-    }
+  if (diagonal2)
+  {
+    theta = 360 - theta;
+  }
+
+  if (theta >= 0 && theta <= 90) { return maxSpeed * (1 - (theta / 45)); }
+  else if (theta > 90 && theta <= 180) { return -1 * maxSpeed; }
+  else if (theta > 180 && theta <= 270) { return maxSpeed * ((theta / 45) - 5); }
+  else if  (theta > 270 && theta <= 360) { return maxSpeed; }
+  else return 0;
 }
 
-/////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////
 
-////////////////////// Setup /////////////////////////////////////////////////////
+//////////////// Main Movement Function //////////////////////////////////////////////
 
-// Setup function
+void moveCar(float angle, int button, int motorSpeed)
+{ 
+  // Move Car Omni with throttle control
+  if (angle >= 0)
+  {
+    FRMotor(PWM1);
+  }
+
+  // Clockwise Rotation
+  else if (button & 0x0020)
+  {
+    FRMotor(motorSpeed * -1);
+    FLMotor(motorSpeed);
+    BRMotor(motorSpeed * -1);
+    BLMotor(motorSpeed);
+  }
+  // Anti-Clockwise Rotation
+  else if (button & 0x0010)
+  {
+    FRMotor(motorSpeed);
+    FLMotor(motorSpeed * -1);
+    BRMotor(motorSpeed);
+    BLMotor(motorSpeed * -1);
+   }
+   // Stop Motors if Joystick is Centered
+   else 
+   {
+     stopAllMotors();
+   }
+}
+
+///////////////////////////////////////////////////////////////////////////////////
+
+////////////// Setup function ////////////////////////////////////////////////////
 void setup() 
 {
     Serial.begin(115200);
@@ -416,25 +333,21 @@ void setup()
       ledcAttachPin(motorPins[i], motorChannels[i]); // Attach pin to channel
     }
 
-    // Encoder pins setup
-    pinMode(FR_enc1, INPUT_PULLUP);
-    pinMode(FR_enc2, INPUT_PULLUP);
+    // Encoder Setup
+    pinMode(FR_encA, INPUT_PULLUP);
+    pinMode(FR_encB, INPUT_PULLUP);
 
-    // Attach interrupts using the correct macro
-    attachInterrupt(digitalPinToInterrupt(FR_enc1), FR_encoder1, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(FR_enc2), FR_encoder2, CHANGE);
+    // Attach interrupt to channel A (rising edge)
+    attachInterrupt(digitalPinToInterrupt(FR_encA), FR_encoderISR, RISING);
     
     // Setup the Bluepad32 callbacks
     BP32.setup(&onConnectedController, &onDisconnectedController);
-
-    previousTime = millis();
 }
 
-/////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 
-//////////////////////// Main Loop //////////////////////////////////////
+/////////////// Main loop /////////////////////////////////////////////////////////////
 
-// Main loop
 void loop() 
 {
     BP32.update();
@@ -451,20 +364,27 @@ void loop()
 
         float angle = calculateAngle(lx, ly);
 
-        float percent = (FR_enc_counter2 * 100) / 1260;
+        // Map the left trigger value (L2) to an additional speed (0 to 205)
+        int additionalSpeed = map(L2, 0, 1023, 0, 124);
 
-        Serial.print("Enc1: ");
-        Serial.print(FR_enc_counter1);
+        FR_encoder();
+
+        int maxSpeed = FR_encoder_controller();
+
+        PWM1 = motor_pwm(0, maxSpeed, 0);
+        PWM2 = motor_pwm(0, maxSpeed, 1);
+
+        /*
+        //DEBUG
+        Serial.print(angle);
         Serial.print("  ");
-        Serial.print("Enc2: ");
-        Serial.print(FR_enc_counter2);
-        Serial.print("  Percent: ");
-        Serial.println(percent);
-
-        float motorSpeedEncoder = enc_PController();
+        Serial.print(PWM1);
+        Serial.print("  ");
+        Serial.println(PWM2); */
         
-        FRMotor(forward, motorSpeedEncoder);
 
+        // Move the car
+        moveCar(angle, button, maxSpeed);
     }
     else
     {
@@ -472,5 +392,5 @@ void loop()
     }
 }
 
-///////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
 
