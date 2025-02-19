@@ -42,7 +42,7 @@ int motorChannels[] = {M1_1_CHANNEL, M1_2_CHANNEL, M2_1_CHANNEL, M2_2_CHANNEL, M
 
 //////////////////// Sensor Pins ////////////////////////////////////////////
 
-const int irPins[10] = {9, 10, 11, 12, 13, 8, 3, 1, 2, 14};  // IR sensor pins
+const int irPins[10] = {9, 10, 11, 12, 13, 8, 3, 1, 2, 42};  // IR sensor pins
 
 /////////////////////////////////////////////////////////////////////////////
 
