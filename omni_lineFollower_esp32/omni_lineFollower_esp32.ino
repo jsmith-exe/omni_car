@@ -59,7 +59,7 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int motorSpeed = 90 * 2.55;
+int motorSpeed = 80 * 2.55;
 
 // Joystick thresholds
 int thresholdLow = -512;
@@ -388,7 +388,7 @@ void loop()
         for (int i = 0; i < 10; i++) 
         {
           sensorRawValues[i] = analogRead(irPins[i]);
-          if (sensorRawValues[i] <= minValue && sensorRawValues[i] < 3500 && sensorRawValues[i] > 2700 ) 
+          if (sensorRawValues[i] <= minValue && sensorRawValues[i] < 4000 ) 
           {
             minValue = sensorRawValues[i];
             minIndex = i;
