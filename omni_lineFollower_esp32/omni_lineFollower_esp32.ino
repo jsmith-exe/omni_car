@@ -42,7 +42,7 @@ int motorChannels[] = {M1_1_CHANNEL, M1_2_CHANNEL, M2_1_CHANNEL, M2_2_CHANNEL, M
 
 //////////////////// Sensor Pins ////////////////////////////////////////////
 
-const int irPins[5] = {9, 10, 11, 12, 13};  // IR sensor pins
+const int irPins[10] = {9, 10, 11, 12, 13, 8, 3, 1, 2, 14};  // IR sensor pins
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -59,17 +59,17 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int motorSpeed = 100 * 2.55;
+int motorSpeed = 90 * 2.55;
 
 // Joystick thresholds
 int thresholdLow = -512;
 int thresholdHigh = 512;
 
-int sensorRawValues[5];  // Sensor values (analog readings)
-int sensorWeights[5] = {-2, -1, 0, 1, 2};
+int sensorRawValues[10];  // Sensor values (analog readings)
+int sensorWeights[10] = {-4, -3, -2, -1, 0, 0, 1, 2, 3, 4};
 
 // PID Controls
-#define Kp 18 //set Kp Value
+#define Kp 22.5 //set Kp Value
 #define Ki 0 //set Ki Value
 #define Kd 0 //set Kd Value
 
@@ -351,7 +351,7 @@ void setup()
       ledcAttachPin(motorPins[i], motorChannels[i]); // Attach pin to channel
     }
 
-    for (int i = 0; i < 5; i++) 
+    for (int i = 0; i < 10; i++) 
     {
       pinMode(irPins[i], INPUT);  // Set IR sensor pins as input
     }
@@ -381,24 +381,42 @@ void loop()
 
         //float angle = calculateAngle(lx, ly);
 
-        int minValue = 4095; // Initialize with the maximum possible analog value
+        int minValue = 4096; // Initialize with the maximum possible analog value
         int minIndex;  // To store the index of the pin with the lowest value
 
         // Read sensor values and find the lowest
-        for (int i = 0; i < 5; i++) 
+        for (int i = 0; i < 10; i++) 
         {
           sensorRawValues[i] = analogRead(irPins[i]);
-          if (sensorRawValues[i] < minValue) 
+          if (sensorRawValues[i] <= minValue && sensorRawValues[i] < 3500 && sensorRawValues[i] > 2700 ) 
           {
             minValue = sensorRawValues[i];
             minIndex = i;
           }
         }
 
+        if (minValue == 4096)
+        {
+          minIndex = 100;
+        }
+
+        Serial.print(minValue);
+        Serial.print("  ");
+
         Serial.print(minIndex);
         Serial.print("  ");
 
-        error = sensorWeights[minIndex];
+        if (minIndex < 99)
+        {
+          error = sensorWeights[minIndex];
+        }
+
+        else if (minIndex == 100)
+        {
+          error = 0;
+        }
+      
+        
         Serial.print(error);
         Serial.print("  ");
 
