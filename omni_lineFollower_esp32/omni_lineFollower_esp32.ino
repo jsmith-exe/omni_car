@@ -69,7 +69,7 @@ int sensorRawValues[10];  // Sensor values (analog readings)
 int sensorWeights[10] = {-4, -3, -2, -1, 0, 0, 1, 2, 3, 4};
 
 // PID Controls
-#define Kp 22.5 //set Kp Value
+#define Kp 37.5 //set Kp Value
 #define Ki 0 //set Ki Value
 #define Kd 0 //set Kd Value
 
@@ -237,7 +237,7 @@ int IR_PController()
 ///////////// Main Movement Algoithm //////////////////////////////////
 
 // Function to control motors based on joystick input
-void moveCar(float angle, int button)
+void moveCar(float angle)
 {
     // 0 to 45 Degrees
     if (angle >= 0 && angle <= 45)
@@ -311,22 +311,7 @@ void moveCar(float angle, int button)
         BRMotor(forward, angularMotorSpeed);
         BLMotor(forward, motorSpeed);
     }
-    // Clockwise Rotation (using button bitmask 0x0020)
-    else if (button & 0x0020)
-    {
-        FRMotor(reverse, 0);
-        FLMotor(forward, 0);
-        BRMotor(reverse, 0);
-        BLMotor(forward, 0);
-    }
-    // Anti-Clockwise Rotation (using button bitmask 0x0010)
-    else if (button & 0x0010)
-    {
-        FRMotor(forward, 0);
-        FLMotor(reverse, 0);
-        BRMotor(forward, 0);
-        BLMotor(reverse, 0);
-    }
+  
     // Stop Motors if Joystick is Centered
     else 
     {
@@ -357,7 +342,7 @@ void setup()
     }
    
     // Setup the Bluepad32 callbacks
-    BP32.setup(&onConnectedController, &onDisconnectedController); 
+    //BP32.setup(&onConnectedController, &onDisconnectedController); 
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -367,9 +352,8 @@ void setup()
 // Main loop
 void loop() 
 {
-    BP32.update();
-    if (myControllers && myControllers->isConnected())
-    {
+
+      /*
         // Read left stick for directional movement
         int16_t lx = myControllers->axisX(); // Left stick X-axis
         int16_t ly = myControllers->axisY(); // Left stick Y-axis
@@ -380,6 +364,7 @@ void loop()
         int button = myControllers->buttons();
 
         //float angle = calculateAngle(lx, ly);
+        */
 
         int minValue = 4096; // Initialize with the maximum possible analog value
         int minIndex;  // To store the index of the pin with the lowest value
@@ -425,12 +410,9 @@ void loop()
         Serial.println(controlSignal);
 
         // Move Car with throttle control
-        moveCar(controlSignal, button);
-    }
-    else
-    {
-        stopAllMotors();
-    }
+        moveCar(controlSignal);
+    
+    
 }
 
 ///////////////////////////////////////////////////////////////////////

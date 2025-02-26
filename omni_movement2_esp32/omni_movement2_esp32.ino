@@ -55,7 +55,7 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int baseSpeed = 80;    // Default speed is 80/204 (~40%)
+int baseSpeed = 150;    // Default speed is 150/255 
 
 // PWM Variables
 float PWM1 = 0;
@@ -293,7 +293,7 @@ void loop()
         float angle = calculateAngle(lx, ly);
 
         // Map the left trigger value (L2) to an additional speed (0 to 205)
-        int additionalSpeed = map(L2, 0, 1023, 0, 124);
+        int additionalSpeed = map(L2, 0, 1023, 0, 105);
 
         // Combine base speed with additional speed
         int maxSpeed = baseSpeed + additionalSpeed;
