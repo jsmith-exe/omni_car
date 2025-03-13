@@ -19,8 +19,8 @@
 #define M1_2 6
 #define M2_1 5
 #define M2_2 4
-#define M3_1 18
-#define M3_2 17
+#define M3_1 35
+#define M3_2 36
 #define M4_1 16
 #define M4_2 15 
 
@@ -42,7 +42,7 @@ int motorChannels[] = {M1_1_CHANNEL, M1_2_CHANNEL, M2_1_CHANNEL, M2_2_CHANNEL, M
 
 //////////////////// Sensor Pins ////////////////////////////////////////////
 
-const int irPins[10] = {9, 10, 11, 12, 13, 8, 3, 1, 2, 20};  // IR sensor pins
+const int irPins[10] = {20, 2, 1, 3, 13, 17, 12, 11, 10, 9};  // IR sensor pins
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -69,7 +69,7 @@ int sensorRawValues[10];  // Sensor values (analog readings)
 int sensorWeights[10] = {-4, -3, -2, -1, 0, 0, 1, 2, 3, 4};
 
 // PID Controls
-#define Kp 37.5 //set Kp Value
+#define Kp 22.5 //set Kp Value
 #define Ki 0 //set Ki Value
 #define Kd 0 //set Kd Value
 
@@ -373,6 +373,8 @@ void loop()
         for (int i = 0; i < 10; i++) 
         {
           sensorRawValues[i] = analogRead(irPins[i]);
+          Serial.print(sensorRawValues[i]);
+          Serial.print(" ");
           if (sensorRawValues[i] <= minValue && sensorRawValues[i] < 4000 ) 
           {
             minValue = sensorRawValues[i];

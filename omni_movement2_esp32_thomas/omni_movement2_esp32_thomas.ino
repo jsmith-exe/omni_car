@@ -12,6 +12,7 @@
 
 #include <Arduino.h>
 #include <Bluepad32.h>
+#include <HardwareSerial.h>
 
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -24,11 +25,9 @@
 #define M3_1 35
 #define M3_2 36
 #define M4_1 16
-#define M4_2 15
+#define M4_2 15 
 
-#define SERVO_PIN 10  // Servo signal pin
-
-int motorPins[] = {M1_1, M1_2, M2_1, M2_2, M3_1, M3_2, M4_1, M4_2, SERVO_PIN};
+int motorPins[] = {M1_1, M1_2, M2_1, M2_2, M3_1, M3_2, M4_1, M4_2};
 
 // Motor channel definitions
 #define M1_1_CHANNEL 0
@@ -38,10 +37,9 @@ int motorPins[] = {M1_1, M1_2, M2_1, M2_2, M3_1, M3_2, M4_1, M4_2, SERVO_PIN};
 #define M3_1_CHANNEL 4
 #define M3_2_CHANNEL 5
 #define M4_1_CHANNEL 6
-#define M4_2_CHANNEL 7
-#define SERVO_CHANNEL 8 
+#define M4_2_CHANNEL 7 
 
-int motorChannels[] = {M1_1_CHANNEL, M1_2_CHANNEL, M2_1_CHANNEL, M2_2_CHANNEL, M3_1_CHANNEL, M3_2_CHANNEL, M4_1_CHANNEL, M4_2_CHANNEL, SERVO_CHANNEL};
+int motorChannels[] = {M1_1_CHANNEL, M1_2_CHANNEL, M2_1_CHANNEL, M2_2_CHANNEL, M3_1_CHANNEL, M3_2_CHANNEL, M4_1_CHANNEL, M4_2_CHANNEL};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -50,7 +48,7 @@ int motorChannels[] = {M1_1_CHANNEL, M1_2_CHANNEL, M2_1_CHANNEL, M2_2_CHANNEL, M
 // LEDC configuration
 #define PWM_FREQ 5000      // PWM frequency in Hz
 #define PWM_RES 8   // 8-bit resolution (0-255)
-#define PWM_CHANNELS 9
+#define PWM_CHANNELS 8
 
 const String forward = "forward";
 const String reverse = "reverse";
@@ -58,12 +56,16 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int baseSpeed = 150;    // Default speed is 100/220 
+int baseSpeed = 150;    // Default speed is 150/255 
 
 // PWM Variables
 float PWM1 = 0;
 float PWM2 = 0;
 
+// Serial communication Variables
+#define RXD1 48
+#define TXD1 47
+char serialData[128];
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -263,6 +265,7 @@ void moveCar(float angle, int button, int motorSpeed)
 void setup() 
 {
     Serial.begin(115200);
+    Serial1.begin(9600,SERIAL_8N1, RXD1, TXD1);
     //Serial.println("Starting Bluepad32...");
 
     // Motor Setup
@@ -274,7 +277,6 @@ void setup()
     
     // Setup the Bluepad32 callbacks
     BP32.setup(&onConnectedController, &onDisconnectedController);
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -290,6 +292,9 @@ void loop()
         int16_t lx = myControllers->axisX(); // Left stick X-axis
         int16_t ly = myControllers->axisY(); // Left stick Y-axis
 
+        int16_t rx = myControllers->axisRX();// Right stick X-axis
+        int16_t ry = myControllers->axisRY();// Right stick Y-axis
+
         // Read left trigger for throttle control
         int16_t L2 = myControllers->throttle(); // Left trigger
 
@@ -297,7 +302,7 @@ void loop()
 
         float angle = calculateAngle(lx, ly);
 
-        // Map the left trigger value (L2) to an additional speed (0 to 120)
+        // Map the left trigger value (L2) to an additional speed (0 to 205)
         int additionalSpeed = map(L2, 0, 1023, 0, 105);
 
         // Combine base speed with additional speed
@@ -305,8 +310,6 @@ void loop()
 
         PWM1 = motor_pwm(angle, maxSpeed, 0);
         PWM2 = motor_pwm(angle, maxSpeed, 1);
-
-      
 
         /*
         //DEBUG
@@ -319,6 +322,21 @@ void loop()
 
         // Move the car
         moveCar(angle, button, maxSpeed);
+
+        //Sending right joystick values, angle and maxSpeed to serial monitor with formatting
+        /*Serial.print("<");
+        Serial.print(ry);
+        Serial.print(",");
+        Serial.print(rx);
+        //Serial.print(",");
+        //Serial.print(angle);
+        //Serial.print(",");
+        //Serial.print(maxSpeed);
+        Serial.println(">");
+        */
+        sprintf(serialData,"<%i,%i,&i,%i>",ry,rx,angle,maxSpeed);
+        Serial1.write(serialData);
+        //Serial.write(serialData);
     }
     else
     {
