@@ -58,9 +58,9 @@ void loop() {
   if (newData == true) {
     strcpy(tempChars, receivedChars);
     parseData();
-    Serial.print(tiltFloat);
-    Serial.print("   ");
     Serial.print(verticalMovementFloat);
+    Serial.print("   ");
+    Serial.print(tiltFloat);
     Serial.print("   ");
     Serial.print(angle);
     Serial.print("   ");
@@ -118,11 +118,11 @@ void parseData() {      // split the data into its parts
     char * strtokIndx; // this is used by strtok() as an index
 
     strtokIndx = strtok(tempChars, ","); // this continues where the previous call left off
-    tiltFloat = atoi(strtokIndx);     // convert this part to a float
+    verticalMovementFloat = atoi(strtokIndx)*(-1);     // convert this part to a float
     //tiltFloat = tiltFloat*(90/512);
 
     strtokIndx = strtok(NULL, ",");
-    verticalMovementFloat = atoi(strtokIndx);   // convert this part to a float
+    tiltFloat = atoi(strtokIndx)*(-1);   // convert this part to a float
     //verticalMovementFloat = verticalMovementFloat*(255/512);
 
     strtokIndx = strtok(NULL, ",");
@@ -134,7 +134,7 @@ void parseData() {      // split the data into its parts
 }
 
 void forkliftMovement()  {
-  /*
+  
   if(tiltFloat>400)
   {
 
@@ -161,26 +161,28 @@ void forkliftMovement()  {
     //myservo.write(tiltFloat);
   //forkliftVerticalMovement = int(trunc(tiltFloat);
   
-  */
   
-  if(verticalMovementFloat>400)//needs to be changed for deadspace on joystick
-  {
-    analogWrite(motorForwardPin, 255);
-    analogWrite(motorReversePin, 0);
-    Serial.print("Forward");
-  }
-  if(verticalMovementFloat<-400)//needs to be changed for deadspace
-  {
-    analogWrite(motorReversePin, 255); 
-    analogWrite(motorForwardPin, 0);
-    Serial.print("Reverse");
-  }
-  if(verticalMovementFloat<400 & verticalMovementFloat>-400);
+  
+  if((verticalMovementFloat<400)&&(verticalMovementFloat>-400))
   {
     analogWrite(motorReversePin, 0);
     analogWrite(motorForwardPin, 0);
     Serial.print("no-where");
   }
+  
+  else if(verticalMovementFloat>400)//needs to be changed for deadspace on joystick
+  {
+    analogWrite(motorForwardPin, 255);
+    analogWrite(motorReversePin, 0);
+    Serial.print("Forward");
+  }
+  else if(verticalMovementFloat<-400)//needs to be changed for deadspace
+  {
+    analogWrite(motorReversePin, 255); 
+    analogWrite(motorForwardPin, 0);
+    Serial.print("Reverse");
+  }
+  
 }
 
 void sendToArduino()
