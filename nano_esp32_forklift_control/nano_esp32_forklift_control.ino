@@ -46,6 +46,9 @@ void setup() {
 
   forkliftTilt=90;
   int pos = 90;
+
+  analogWrite(motorReversePin, 0);
+  analogWrite(motorForwardPin, 0);
 }
 
 void loop() {
@@ -65,7 +68,6 @@ void loop() {
     forkliftMovement();
     newData = false;
   }
-  //forkliftMovement();
   /*
   analogWrite(motorForwardPin,255);
   delay(100);
@@ -73,9 +75,9 @@ void loop() {
   analogWrite(motorReversePin,255);
   delay(100);
   analogWrite(motorReversePin,0);
-  //forkliftMovement();
   //delay(100);
   */
+  
   
 }
 
@@ -132,8 +134,7 @@ void parseData() {      // split the data into its parts
 }
 
 void forkliftMovement()  {
-  //forkliftTilt = tiltFloat + 90;
-  
+  /*
   if(tiltFloat>400)
   {
 
@@ -145,6 +146,7 @@ void forkliftMovement()  {
     //delay(5);
 
   }
+  
   if(tiltFloat<-400)
   {
 
@@ -159,20 +161,25 @@ void forkliftMovement()  {
     //myservo.write(tiltFloat);
   //forkliftVerticalMovement = int(trunc(tiltFloat);
   
-
+  */
   
   if(verticalMovementFloat>400)//needs to be changed for deadspace on joystick
   {
     analogWrite(motorForwardPin, 255);
+    analogWrite(motorReversePin, 0);
+    Serial.print("Forward");
   }
   if(verticalMovementFloat<-400)//needs to be changed for deadspace
   {
     analogWrite(motorReversePin, 255); 
+    analogWrite(motorForwardPin, 0);
+    Serial.print("Reverse");
   }
-  if(verticalMovementFloat<400 && verticalMovementFloat>-400);
+  if(verticalMovementFloat<400 & verticalMovementFloat>-400);
   {
     analogWrite(motorReversePin, 0);
     analogWrite(motorForwardPin, 0);
+    Serial.print("no-where");
   }
 }
 
