@@ -60,7 +60,7 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int motorSpeed = 100 * 2.55;
+int motorSpeed = 60 * 2.55;
 
 // Joystick thresholds
 int thresholdLow = -512;
@@ -70,7 +70,7 @@ int sensorRawValues[10];  // Sensor values (analog readings)
 int sensorWeights[10] = {-4, -3, -2, -1, 0, 0, 1, 2, 3, 4};
 
 // PID Controls
-#define Kp 25 //set Kp Value
+#define Kp 20 //set Kp Value
 #define Ki 0 //set Ki Value
 #define Kd 0 //set Kd Value
 
@@ -376,12 +376,17 @@ void loop()
           sensorRawValues[i] = analogRead(irPins[i]);
           Serial.print(sensorRawValues[i]);
           Serial.print(" ");
-          if (sensorRawValues[i] <= (minValue - 0) && sensorRawValues[i] < 4000 )
+          if (sensorRawValues[9] <= 3840)
+          {
+            minValue = sensorRawValues[9];
+            minIndex = 9;
+          }
+          else if (sensorRawValues[i] <= (minValue - 0) && sensorRawValues[i] < 4000 )
           {
             minValue = sensorRawValues[i];
             minIndex = i;
           }
-          if (minValue > 3880)         
+          if (minValue > 3950)         
           {
             minIndex = 100;
           }
@@ -405,13 +410,13 @@ void loop()
         }
         else if (minIndex == 0)
         {
-          controlSignal = 270;
+          controlSignal = 260;
           moveCar(controlSignal);
-          delay(200);
+          delay(500);
         }
         else if (minIndex == 9)
         {
-          controlSignal = 90;
+          controlSignal = 100;
           moveCar(controlSignal);
           delay(200);
         }
