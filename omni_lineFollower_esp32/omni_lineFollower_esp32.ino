@@ -60,7 +60,7 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int motorSpeed = 100 * 2.55;
+int motorSpeed = 80 * 2.55;
 
 // Joystick thresholds
 int thresholdLow = -512;
@@ -70,7 +70,7 @@ int sensorRawValues[10];  // Sensor values (analog readings)
 int sensorWeights[10] = {-4, -3, -2, -1, 0, 0, 1, 2, 3, 4};
 
 // PID Controls
-#define Kp 35//set Kp Value
+#define Kp 30 //set Kp Value
 #define Ki 0 //set Ki Value
 #define Kd 0 //set Kd Value
 
@@ -369,7 +369,6 @@ void loop()
 
         int minValue = 4096; // Initialize with the maximum possible analog value
         int minIndex;  // To store the index of the pin with the lowest value
-        int sensorsOn = 0;
 
         // Read sensor values and find the lowest
         for (int i = 0; i < 10; i++) 
@@ -377,41 +376,13 @@ void loop()
           sensorRawValues[i] = analogRead(irPins[i]);
           Serial.print(sensorRawValues[i]);
           Serial.print(" ");
-          if (sensorRawValues[i] <= (minValue - 0) && ((sensorRawValues[i] < 3820) || (sensorRawValues[9] < 3920)  ))
+          if (sensorRawValues[i] <= (minValue - 0) && sensorRawValues[i] < 4000 )
           {
             minValue = sensorRawValues[i];
             minIndex = i;
-            //sensorsOn += 1;
           }
           
-          if(sensorRawValues[i] < 3820)
-          {
-            sensorsOn += 1;
-          }
-
-          
         }
-        if (sensorRawValues[9] < 3920)
-        { 
-          sensorsOn += 1;
-
-        }
-
-        if (sensorsOn > 1 && sensorRawValues[0] < 3820)
-            {
-              minIndex = 105;
-            }
-        else if (sensorsOn > 1 && sensorRawValues[9] < 3920)
-            {
-              minIndex = 106;
-            }
-        else if (sensorsOn == 0)
-          {
-            minIndex = 100;
-          }
-
-
-    
 
 
         //Serial.print(minValue);
@@ -424,14 +395,6 @@ void loop()
         {
           error = sensorWeights[minIndex];
         }
-        else if (minIndex == 105)
-        {
-          error = -2.6;
-        }
-        else if (minIndex == 106)
-        {
-          error = 2.6;
-        }
 
 
         else if (minIndex == 100)
@@ -440,18 +403,36 @@ void loop()
         }
       
       
-        
+        int controlSignal;
         Serial.print(error);
         Serial.print("  ");
 
-        int controlSignal = IR_PController();
+        if (minIndex > 0 && minIndex < 9)
+        {
+          controlSignal = IR_PController();
+          moveCar(controlSignal);
+        }
+        else if (minIndex == 0)
+        {
+          controlSignal = 250;
+          moveCar(controlSignal);
+          delay(200);
+        }
+        else if (minIndex == 9)
+        {
+          controlSignal = 110;
+          moveCar(controlSignal);
+          delay(200);
+        }
 
-        Serial.print(controlSignal);
-        Serial.print(" ");
-        Serial.println(sensorsOn);
+        
+
+        Serial.println(controlSignal);
 
         // Move Car with throttle control
-        moveCar(controlSignal);
+        //moveCar(controlSignal);
+
+        delay(0);
     
     
 }
