@@ -11,7 +11,8 @@
 #include <Arduino.h>
 #include <Bluepad32.h>
 
-/////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////
+///////////////////////
 
 //////////////// Motor pin definitions //////////////////////////////////////////
 
@@ -19,8 +20,8 @@
 #define M1_2 6
 #define M2_1 5
 #define M2_2 4
-#define M3_1 35
-#define M3_2 36
+#define M3_1 37
+#define M3_2 38
 #define M4_1 16
 #define M4_2 15 
 
@@ -42,7 +43,7 @@ int motorChannels[] = {M1_1_CHANNEL, M1_2_CHANNEL, M2_1_CHANNEL, M2_2_CHANNEL, M
 
 //////////////////// Sensor Pins ////////////////////////////////////////////
 
-const int irPins[10] = {20, 2, 1, 3, 13, 17, 12, 11, 10, 9};  // IR sensor pins
+const int irPins[10] = {9, 10, 11, 12, 13, 17, 3, 1, 2, 20};  // IR sensor pins
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -59,7 +60,7 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int motorSpeed = 80 * 2.55;
+int motorSpeed = 100 * 2.55;
 
 // Joystick thresholds
 int thresholdLow = -512;
@@ -69,12 +70,12 @@ int sensorRawValues[10];  // Sensor values (analog readings)
 int sensorWeights[10] = {-4, -3, -2, -1, 0, 0, 1, 2, 3, 4};
 
 // PID Controls
-#define Kp 22.5 //set Kp Value
+#define Kp 35//set Kp Value
 #define Ki 0 //set Ki Value
 #define Kd 0 //set Kd Value
 
 int proportional = 0;
-int error = 0;
+float error = 0;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -222,7 +223,7 @@ float calculateAngle(int16_t lx, int16_t ly)
 int IR_PController() 
 {
   proportional = Kp * error; 
-  int controlSignal = proportional; 
+  float controlSignal = proportional; 
 
   if (controlSignal < 0)
   {
@@ -368,6 +369,7 @@ void loop()
 
         int minValue = 4096; // Initialize with the maximum possible analog value
         int minIndex;  // To store the index of the pin with the lowest value
+        int sensorsOn = 0;
 
         // Read sensor values and find the lowest
         for (int i = 0; i < 10; i++) 
@@ -375,20 +377,45 @@ void loop()
           sensorRawValues[i] = analogRead(irPins[i]);
           Serial.print(sensorRawValues[i]);
           Serial.print(" ");
-          if (sensorRawValues[i] <= minValue && sensorRawValues[i] < 4000 ) 
+          if (sensorRawValues[i] <= (minValue - 0) && ((sensorRawValues[i] < 3820) || (sensorRawValues[9] < 3920)  ))
           {
             minValue = sensorRawValues[i];
             minIndex = i;
+            //sensorsOn += 1;
           }
+          
+          if(sensorRawValues[i] < 3820)
+          {
+            sensorsOn += 1;
+          }
+
+          
+        }
+        if (sensorRawValues[9] < 3920)
+        { 
+          sensorsOn += 1;
+
         }
 
-        if (minValue == 4096)
-        {
-          minIndex = 100;
-        }
+        if (sensorsOn > 1 && sensorRawValues[0] < 3820)
+            {
+              minIndex = 105;
+            }
+        else if (sensorsOn > 1 && sensorRawValues[9] < 3920)
+            {
+              minIndex = 106;
+            }
+        else if (sensorsOn == 0)
+          {
+            minIndex = 100;
+          }
 
-        Serial.print(minValue);
-        Serial.print("  ");
+
+    
+
+
+        //Serial.print(minValue);
+        //Serial.print("  ");
 
         Serial.print(minIndex);
         Serial.print("  ");
@@ -397,11 +424,21 @@ void loop()
         {
           error = sensorWeights[minIndex];
         }
+        else if (minIndex == 105)
+        {
+          error = -2.6;
+        }
+        else if (minIndex == 106)
+        {
+          error = 2.6;
+        }
+
 
         else if (minIndex == 100)
         {
           error = 0;
         }
+      
       
         
         Serial.print(error);
@@ -409,7 +446,9 @@ void loop()
 
         int controlSignal = IR_PController();
 
-        Serial.println(controlSignal);
+        Serial.print(controlSignal);
+        Serial.print(" ");
+        Serial.println(sensorsOn);
 
         // Move Car with throttle control
         moveCar(controlSignal);
