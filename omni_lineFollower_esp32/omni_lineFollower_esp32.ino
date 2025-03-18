@@ -60,7 +60,7 @@ const String reverse = "reverse";
 ControllerPtr myControllers; // Initialize to nullptr
 
 // Motor Speed
-int motorSpeed = 80 * 2.55;
+int motorSpeed = 100 * 2.55;
 
 // Joystick thresholds
 int thresholdLow = -512;
@@ -70,7 +70,7 @@ int sensorRawValues[10];  // Sensor values (analog readings)
 int sensorWeights[10] = {-4, -3, -2, -1, 0, 0, 1, 2, 3, 4};
 
 // PID Controls
-#define Kp 30 //set Kp Value
+#define Kp 25 //set Kp Value
 #define Ki 0 //set Ki Value
 #define Kd 0 //set Kd Value
 
@@ -381,49 +381,49 @@ void loop()
             minValue = sensorRawValues[i];
             minIndex = i;
           }
-          
+          if (minValue > 3880)         
+          {
+            minIndex = 100;
+          }
         }
-
 
         //Serial.print(minValue);
         //Serial.print("  ");
 
         Serial.print(minIndex);
         Serial.print("  ");
-
-        if (minIndex < 99)
-        {
-          error = sensorWeights[minIndex];
-        }
-
-
-        else if (minIndex == 100)
-        {
-          error = 0;
-        }
       
       
-        int controlSignal;
-        Serial.print(error);
-        Serial.print("  ");
+        float controlSignal;
+        
 
         if (minIndex > 0 && minIndex < 9)
         {
+          error = sensorWeights[minIndex];
           controlSignal = IR_PController();
           moveCar(controlSignal);
         }
         else if (minIndex == 0)
         {
-          controlSignal = 250;
+          controlSignal = 270;
           moveCar(controlSignal);
           delay(200);
         }
         else if (minIndex == 9)
         {
-          controlSignal = 110;
+          controlSignal = 90;
           moveCar(controlSignal);
           delay(200);
         }
+        else 
+        {
+          error = 0;
+          controlSignal = 0;
+          moveCar(controlSignal);
+        }
+
+        Serial.print(error);
+        Serial.print("  ");
 
         
 
