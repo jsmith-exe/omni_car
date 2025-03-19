@@ -41,6 +41,7 @@ int motorChannels[] = {M1_1_CHANNEL, M1_2_CHANNEL, M2_1_CHANNEL, M2_2_CHANNEL, M
 //////////////////// Sensor Pins ////////////////////////////////////////////
 
 const int irPins[10] = {9, 10, 11, 12, 13, 17, 3, 1, 2, 20};  // IR sensor pins
+#define photoPin 18 // Photoresistor Pin
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -74,7 +75,7 @@ int sensorRawValues[10];  // Sensor values (analog readings)
 int sensorWeights[10] = {-4, -3, -2, -1, 0, 0, 1, 2, 3, 4};
 
 // PID Controls
-#define Kp 22.5 //set Kp Value
+#define Kp 30 //set Kp Value
 #define Ki 0 //set Ki Value
 #define Kd 0 //set Kd Value
 
@@ -82,6 +83,13 @@ int proportional = 0;
 int error = 0;
 
 bool RCMode = true;
+
+int photoresistor = 0;
+int threshold = 1100;
+int LFxpos = 0;
+int LFypos = 0;
+int forkliftHeight = 0;
+int ballfound = 0;
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -495,11 +503,11 @@ void setup()
     {
       pinMode(irPins[i], INPUT);  // Set IR sensor pins as input
     }
+
+    pinMode(photoPin, OUTPUT);
    
     // Setup the Bluepad32 callbacks
     BP32.setup(&onConnectedController, &onDisconnectedController); 
-
-    
     
 }
 
@@ -570,6 +578,8 @@ void LFloop()
 
     int minValue = 4096; // Initialize with the maximum possible analog value
         int minIndex;  // To store the index of the pin with the lowest value
+        
+        Serial.print("Raw Sensor Values: ");
 
         // Read sensor values and find the lowest
         for (int i = 0; i < 10; i++) 
@@ -577,25 +587,27 @@ void LFloop()
           sensorRawValues[i] = analogRead(irPins[i]);
           Serial.print(sensorRawValues[i]);
           Serial.print(" ");
-          if (sensorRawValues[9] <= 3840)
+          if (sensorRawValues[9] <= 3800)
           {
             minValue = sensorRawValues[9];
             minIndex = 9;
           }
-          else if (sensorRawValues[i] <= (minValue - 0) && sensorRawValues[i] < 4000 )
+          else if (sensorRawValues[i] <= (minValue - 0) && sensorRawValues[i] < 3900 )
           {
             minValue = sensorRawValues[i];
             minIndex = i;
           }
-          if (minValue > 3950)         
+          else if (minValue > 3800)        
           {
             minIndex = 100;
           }
         }
 
-        //Serial.print(minValue);
-        //Serial.print("  ");
+        Serial.print("|| Min Sensor Value: ");
+        Serial.print(minValue);
+        Serial.print("  ");
 
+        Serial.print("|| Min Index Value: ");
         Serial.print(minIndex);
         Serial.print("  ");
       
@@ -611,13 +623,13 @@ void LFloop()
         }
         else if (minIndex == 0)
         {
-          controlSignal = 260;
+          controlSignal = 240;
           LFmoveCar(controlSignal);
-          delay(500);
+          delay(200);
         }
         else if (minIndex == 9)
         {
-          controlSignal = 100;
+          controlSignal = 110;
           LFmoveCar(controlSignal);
           delay(200);
         }
@@ -628,23 +640,65 @@ void LFloop()
           LFmoveCar(controlSignal);
         }
 
+        Serial.print("|| Error: ");
         Serial.print(error);
         Serial.print("  ");
 
         
+        Serial.print("|| Output Signal: ");
+        Serial.print(controlSignal);
 
-        Serial.println(controlSignal);
+        Serial.print("|| Ball: ");
+        Serial.println(ballfound);
 
         // Move Car with throttle control
-        //moveCar(controlSignal);
+        LFmoveCar(controlSignal);
+
+        forkliftHeight += 1;
+        LFxpos = 512;
+        if (forkliftHeight<600)
+        {                
+            //LFypos = -512;
+            LFypos = 0;
+        }
+        else
+        {
+          LFypos = 0;
+        }
+        sprintf(serialData,"<%i,%i,%i,%i>",LFypos,LFxpos,controlSignal,motorSpeed);
+        
+        //Serial.println(serialData);//needs to be last, sends data to nano for forklift control
+        Serial1.println(serialData);//needs to be last, sends data to nano for forklift control  
+
+}
+
+void ballSearch()
+{
+   photoresistor = analogRead(photoPin);
+
+   delay(100);
+
+        if ((photoresistor < threshold)&&(photoresistor >= 400))
+        {
+          ballfound = 1;           
+        }
+        else
+        {
+          ballfound = 0;
+          LFmoveCar(0);
+        }
+      //Serial.println(photoresistor);
+
 
         delay(0);
-
+        
+        
 }
 
 ///////////////////// Main Loop /////////////////////////////////////////
 void loop() 
 {
+  
     BP32.update();
     if (myControllers && myControllers->isConnected()) 
     {
@@ -653,6 +707,9 @@ void loop()
         if (button & 0x00000001)//changes car between line following and remote controll
         {
             RCMode = !RCMode;
+            forkliftHeight = 0;
+            ballfound = 0;
+            Serial.print("Line Follower Mode");
             delay(500);
         }
 
@@ -663,13 +720,22 @@ void loop()
 
         else
         {
+          
+          if (ballfound==0)
+          {
+            ballSearch();
+          }
+          else if (ballfound == 1)
+          {
             LFloop();
+          }
         }
     }
     
     else
     {
         stopAllMotors();
+        
     }
 
 }
