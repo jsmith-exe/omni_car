@@ -61,7 +61,7 @@ ControllerPtr myControllers; // Initialize to nullptr
 int motorSpeed = 80 * 2.55;
 
 // Remote Control Motor Speed
-int baseSpeed = 150;    // Default speed is 150/255 
+int baseSpeed = 120;    // Default speed is 150/255 
 
 // Remote Control PWM Variables
 float PWM1 = 0;
@@ -81,6 +81,8 @@ int sensorWeights[10] = {-4, -3, -2, -1, 0, 0, 1, 2, 3, 4};
 
 int proportional = 0;
 int error = 0;
+
+float controlSignal;
 
 bool RCMode = true;
 
@@ -447,7 +449,7 @@ void LFmoveCar(float angle)
 
 //////////////// RC Movement Function ///////////////////////////////////////////
 
-void RCmoveCar(float angle, int button, int motorSpeed)
+void RCmoveCar(float angle, int button, int maxSpeed)
 { 
   // Move Car Omni with throttle control
   if (angle >= 0)
@@ -461,18 +463,18 @@ void RCmoveCar(float angle, int button, int motorSpeed)
   // Clockwise Rotation
   else if (button & 0x0020)
   {
-    RCFRMotor(motorSpeed * -1);
-    RCFLMotor(motorSpeed);
-    RCBRMotor(motorSpeed * -1);
-    RCBLMotor(motorSpeed);
+    RCFRMotor(maxSpeed * -1);
+    RCFLMotor(maxSpeed);
+    RCBRMotor(maxSpeed * -1);
+    RCBLMotor(maxSpeed);
   }
   // Anti-Clockwise Rotation
   else if (button & 0x0010)
   {
-    RCFRMotor(motorSpeed);
-    RCFLMotor(motorSpeed * -1);
-    RCBRMotor(motorSpeed);
-    RCBLMotor(motorSpeed * -1);
+    RCFRMotor(maxSpeed);
+    RCFLMotor(maxSpeed * -1);
+    RCBRMotor(maxSpeed);
+    RCBLMotor(maxSpeed * -1);
    }
    // Stop Motors if Joystick is Centered
    else 
@@ -532,7 +534,7 @@ void RCloop()
         float angle = calculateAngle(lx, ly);
 
         // Map the left trigger value (L2) to an additional speed (0 to 205)
-        int additionalSpeed = map(L2, 0, 1023, 0, 105);
+        int additionalSpeed = map(L2, 0, 1023, 0, 110);
 
         // Combine base speed with additional speed
         int maxSpeed = baseSpeed + additionalSpeed;
@@ -610,9 +612,6 @@ void LFloop()
         Serial.print("|| Min Index Value: ");
         Serial.print(minIndex);
         Serial.print("  ");
-      
-      
-        float controlSignal;
         
 
         if (minIndex > 0 && minIndex < 9)
@@ -665,10 +664,12 @@ void LFloop()
         {
           LFypos = 0;
         }
+
         sprintf(serialData,"<%i,%i,%i,%i>",LFypos,LFxpos,controlSignal,motorSpeed);
         
         //Serial.println(serialData);//needs to be last, sends data to nano for forklift control
-        Serial1.println(serialData);//needs to be last, sends data to nano for forklift control  
+        Serial1.println(serialData);//needs to be last, sends data to nano for forklift control
+          
 
 }
 
@@ -680,11 +681,33 @@ void ballSearch()
 
         if ((photoresistor < threshold)&&(photoresistor >= 400))
         {
-          ballfound = 1;           
+          ballfound = 1;
+          forkliftHeight += 1;
+          LFxpos = 512;
+          if (forkliftHeight<600)
+          {                
+            //LFypos = -512;
+            LFypos = 0;
+          }
+          else
+          {
+          LFypos = 0;
+          }
+
+          sprintf(serialData,"<%i,%i,%i,%i>",LFypos,LFxpos,controlSignal,motorSpeed);
+        
+          Serial.println(serialData);//needs to be last, sends data to nano for forklift control
+          for (int j = 0; j < 100; j ++)
+          {
+            Serial1.println(serialData);//needs to be last, sends data to nano for forklift control
+          }
+
+          motorSpeed = 70 * 2.55;
         }
         else
         {
           ballfound = 0;
+          motorSpeed = 30 * 2.55;
           LFmoveCar(0);
         }
       //Serial.println(photoresistor);
